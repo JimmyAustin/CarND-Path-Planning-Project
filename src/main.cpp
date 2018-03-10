@@ -245,11 +245,7 @@ int main() {
             // Previous path data given to the Planner
             auto previous_path_x = j[1]["previous_path_x"];
             auto previous_path_y = j[1]["previous_path_y"];
-            if (packet_tick == 1) {
-              std::cout << "Previous wiped" << std::endl;
-              //previous_path_x = "[]";
-              //previous_path_y = "[]";
-            }
+
             // Previous path's end s and d values 
             double end_path_s = j[1]["end_path_s"];
             double end_path_d = j[1]["end_path_d"];
@@ -388,6 +384,7 @@ int main() {
 
             if (prev_size < 2) {
                 pst.push_back(make_pair(car_x - cos(car_yaw), car_y - sin(car_yaw)));
+                pst.push_back(make_pair(car_x, car_y));
             } else {
                 ref_x = previous_path_x[prev_size-1];
                 ref_y = previous_path_y[prev_size-1];
