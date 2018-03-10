@@ -186,7 +186,8 @@ int main() {
 
   double target_velocity = 49.5;
   double current_target_velocity = 0;
-
+  double acceleration_factor = 0.1;
+  double deacceleration_factor = 0.3;
   double current_lane = 1;
   int packet_tick = 0;
 
@@ -212,7 +213,7 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&packet_tick, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&current_lane,&target_velocity,&current_target_velocity](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&packet_tick, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&current_lane,&target_velocity,&acceleration_factor, &deacceleration_factor,&current_target_velocity](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -229,13 +230,8 @@ int main() {
         string event = j[0].get<string>();
         
         if (event == "telemetry") {
-            packet_tick += 1;
-
-            double threshold_front = 30;
-            double threshold_back = 20;
-            double acceleration_factor = 0.1;
-            double deacceleration_factor = 0.3;
-
+          packet_tick += 1;
+          // j[1] is the data JSON object
           
             // Main car's localization Data
             double car_x = j[1]["x"];
@@ -265,82 +261,100 @@ int main() {
             bool change_to_left_lane = (current_lane > 0);
             bool change_to_right_lane = (current_lane < 2);
 
+            //change_to_left_lane = true;
+            //change_to_right_lane = true;
+
             // threshold for s gap between us and other cars before classifying them as being too close
-            
+            double threshold_front = 30;
+            double threshold_back = 10;
+
+
             int prev_size = previous_path_x.size();
 
             int closest_car_ahead = 20;
             int closest_car_ahead_predicted_distance = 10000000;
             int closest_car_ahead_actual_distance = 10000000;
 
-            double predicted_car_s = car_s + ((double)prev_size*.02*car_speed);
-            double car_in_front_speed = 10000;
-
+            double predicted_car_location = car_s + ((double)prev_size*.02*car_speed);
+            double slowest_in_front = 10000;
             for(int i = 0; i < sensor_fusion.size(); i++) {
+
+                // check if car is in range of our car
                 double vx = sensor_fusion[i][3];
                 double vy = sensor_fusion[i][4];
                 double other_car_speed = sqrt(vx*vx*vy*vy);
-                double other_car_current_s = sensor_fusion[i][5];
-                double other_car_future_s = double(sensor_fusion[i][5]) + ((double)prev_size*.02*other_car_speed);
+                double other_car_s = sensor_fusion[i][5];
+                double current_car_s = sensor_fusion[i][5];
+                // See where other car will be once we've used all points from the prev path
+                // TODO: use points_to_add instead?
+                other_car_s += ((double)prev_size*.02*other_car_speed);
+
+                bool car_ahead = current_car_s > car_s;
+                bool gap_within_threshold = (other_car_s - predicted_car_location < threshold_front && car_ahead) or (other_car_s - predicted_car_location < -threshold_back) or
+                                            (current_car_s - car_s < threshold_front && car_ahead) or (current_car_s - car_s < -threshold_back);
                 float d = sensor_fusion[i][6];
+                // lane is 4m wide
+
+//                 2 + (4 * current_lane)
+
                 int other_car_lane = floor((d/4.0));
-
-                bool car_ahead = other_car_current_s > car_s;
-
-                // Use the distance from the car in front in both real terms and predicted terms.
-                bool gap_within_threshold = (other_car_future_s - predicted_car_s < threshold_front) and (other_car_future_s - predicted_car_s > 0-threshold_back) or
-                                            (other_car_current_s - car_s < threshold_front) and (other_car_current_s - car_s > 0-threshold_back);
-
-                //Print debug information every 10th tick tick.
                 if (packet_tick % 10 == 0) {
-                    std::cout << i << " - Lane: " << other_car_lane << ", Ahead: " << car_ahead << std::endl;
-                    std::cout << "            Location:" << other_car_current_s << std::endl;
-                    std::cout << "  Predicted Location:" << other_car_future_s << std::endl;
-                    std::cout << "  Gap Within Threshold:" << gap_within_threshold << std::endl;
-                    std::cout << "  Predicted Location:" << other_car_future_s << std::endl;
-                    std::cout << "  Speed:" << other_car_speed << std::endl;
-                    std::cout << "  Predicted Distance:" << other_car_future_s - predicted_car_s << std::endl;
-                    std::cout << "  Distance:" << other_car_current_s - car_s << std::endl;
+                  std::cout << i << " - Lane: " << other_car_lane << ", Ahead: " << car_ahead << std::endl;
+                  std::cout << "            Location:" << current_car_s << std::endl;
+                  std::cout << "  Predicted Location:" << other_car_s << std::endl;
+                  std::cout << "  Gap Within Threshold:" << gap_within_threshold << std::endl;
+                  std::cout << "  Predicted Location:" << other_car_s << std::endl;
+                  std::cout << "  Speed:" << other_car_speed << std::endl;
+                  std::cout << "  Predicted Distance:" << other_car_s - predicted_car_location << std::endl;
+                  std::cout << "  Distance:" << current_car_s - car_s << std::endl;
                 }
                 if (other_car_lane == current_lane) {
                   if (car_ahead) {
-                    if (car_in_front_speed < other_car_speed) {
-                      car_in_front_speed = other_car_speed;
+                    if (slowest_in_front < other_car_speed) {
+                      slowest_in_front = other_car_speed;
                     }
                   }
-                  if ((other_car_future_s - predicted_car_s) < closest_car_ahead_predicted_distance && car_ahead) {
+                  if ((other_car_s - predicted_car_location) < closest_car_ahead_predicted_distance && car_ahead) {
                     closest_car_ahead = i;
-                    closest_car_ahead_predicted_distance = other_car_future_s - predicted_car_s;
-                    closest_car_ahead_actual_distance = other_car_current_s - car_s;
+                    closest_car_ahead_predicted_distance = other_car_s - predicted_car_location;
+                    closest_car_ahead_actual_distance = current_car_s - car_s;
                   } 
                 }
 
-                if (gap_within_threshold) {
+                // if other car is close to us
+                if (gap_within_threshold && car_ahead) {
 
                     // other car in our lane
                     if (other_car_lane == current_lane && car_ahead) {
+
                         too_close_to_car_in_front = true;
+                        //cout << "other_car_lane: " << other_car_lane << endl;
+
                     }
+
+                    // other car in left lane
                     else if (other_car_lane == current_lane - 1) {
+
                         change_to_left_lane = false;
+                        //cout << "don't change to left. other_car_lane: " << other_car_lane << endl;
+
                     }
+
+                    // other car in right lane
                     else if (other_car_lane == current_lane + 1) {
+
                         change_to_right_lane = false;
+                        //cout << "don't change to right. other_car_lane: " << other_car_lane << endl;
+
                     }
                 }
             }
 
-            // Debugging value
             auto action = "Continue";
 
             if (too_close_to_car_in_front) {
-                //If speed to high, reduce to a sensible minimum.
-                if (car_in_front_speed > 100) {
-                  car_in_front_speed = 20;
-                }
-
-                //Drop speed by a constant factor, or to the speed of the car in front, whichever is higher.
-                current_target_velocity = max(current_target_velocity - deacceleration_factor, car_in_front_speed);
+        
+                current_target_velocity = max(current_target_velocity - deacceleration_factor, slowest_in_front - 3.0);
 
                 if (change_to_left_lane == true) {
                     current_lane -= 1;
@@ -360,29 +374,31 @@ int main() {
               action = "Continue";
             }
 
-            // Debugging information, to be print on every 10th packet. 
-            // This makes it easier to track the same car in the debugging console.
+                            if (packet_tick % 10 == 0) {
+            cout << "too_close_to_car_in_front: " << too_close_to_car_in_front << endl;
+            cout << "change_to_left_lane: " << change_to_left_lane << endl;
+            cout << "change_to_right_lane: " << change_to_right_lane << endl;
 
-            if (packet_tick % 10 == 0) {
-              cout << "too_close_to_car_in_front: " << too_close_to_car_in_front << endl;
-              cout << "change_to_left_lane: " << change_to_left_lane << endl;
-              cout << "change_to_right_lane: " << change_to_right_lane << endl;
+            cout << "current_target_velocity: " << current_target_velocity << endl;
+            cout << "closest_car_ahead: " << closest_car_ahead << endl;
+            cout << "closest_car_ahead_predicted_distance: " << closest_car_ahead_predicted_distance << endl;
+            cout << "closest_car_ahead_actual_distance: " << closest_car_ahead_actual_distance << endl;
 
-              cout << "current_target_velocity: " << current_target_velocity << endl;
-              cout << "closest_car_ahead: " << closest_car_ahead << endl;
-              cout << "closest_car_ahead_predicted_distance: " << closest_car_ahead_predicted_distance << endl;
-              cout << "closest_car_ahead_actual_distance: " << closest_car_ahead_actual_distance << endl;
+            cout << "Current Lane: " << current_lane << endl;
+            cout << "Action: " << action << endl;
+                        std::cout << "------" << std::endl;
 
-              cout << "Current Lane: " << current_lane << endl;
-              cout << "Action: " << action << endl;
-              std::cout << "------" << std::endl;
-            }
+}
 
+            json msgJson;
 
             vector<double> next_x_vals;
             vector<double> next_y_vals;
 
             vector<pair<double, double>> pst;
+
+            vector<double> pstx;
+            vector<double> psty;
 
             double ref_x = car_x;
             double ref_y = car_y;
@@ -390,7 +406,11 @@ int main() {
 
 
             if (prev_size < 2) {
-                pst.push_back(make_pair(car_x - cos(car_yaw), car_y - sin(car_yaw)));
+                pstx.push_back(car_x - cos(car_yaw));
+                pstx.push_back(car_x);
+
+                psty.push_back(car_y - sin(car_yaw));
+                psty.push_back(car_y); 
             } else {
                 ref_x = previous_path_x[prev_size-1];
                 ref_y = previous_path_y[prev_size-1];
@@ -399,54 +419,88 @@ int main() {
                 double ref_y_prev = previous_path_y[prev_size-2];
                 ref_yaw = atan2(ref_y-ref_y_prev, ref_x-ref_x_prev);
 
-                pst.push_back(make_pair(ref_x_prev, ref_y_prev));
-                pst.push_back(make_pair(ref_x, ref_y));
+                pstx.push_back(ref_x_prev);
+                pstx.push_back(ref_x);
+
+                psty.push_back(ref_y_prev);
+                psty.push_back(ref_y); 
             }
 
             float d = 2 + (4 * current_lane); // Lanes are four meters wide. 
 
-            // We define spacing based on the speed of the vehicle, with a minimum of 20 units. 
-            // This allows the car to correct back into a lane faster at lower speeds, 
-            // but still allows for less jerk in lane changes at high speeds.
+            // vector<double> next_wp0 = world_map.getXY(car_s + 30.0, 6);
+            // vector<double> next_wp1 = world_map.getXY(car_s + 60.0, 6);
+            // vector<double> next_wp2 = world_map.getXY(car_s + 90.0, 6);
 
-            double spacing = max(car_speed, 20.);//50.;
+            double spacing = 30.;
             vector<double> next_wp0 = getXY(car_s+spacing, (2+4*current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_wp1 = getXY(car_s+spacing*2, (2+4*current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_wp2 = getXY(car_s+spacing*3, (2+4*current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
-            pst.push_back(make_pair(next_wp0[0], next_wp0[1]));
-            pst.push_back(make_pair(next_wp1[0], next_wp1[1]));
-            pst.push_back(make_pair(next_wp2[0], next_wp2[1]));
 
-            // Sort waypoints
+            pstx.push_back(next_wp0[0]);
+            pstx.push_back(next_wp1[0]);
+            pstx.push_back(next_wp2[0]);
 
-            for (int i = 0; i < pst.size(); i++)
+            psty.push_back(next_wp0[1]);
+            psty.push_back(next_wp1[1]);
+            psty.push_back(next_wp2[1]);
+
+            // Shift them all to reference
+
+
+
+            for (int i = 0; i <pstx.size(); i++)
             {
-                double shift_x = pst[i].first-ref_x;
-                double shift_y = pst[i].second-ref_y;
+                double shift_x = pstx[i]-ref_x;
+                double shift_y = psty[i]-ref_y;
 
-                pst[i].first =  (shift_x * cos(0-ref_yaw)-shift_y*sin(0-ref_yaw));
-                pst[i].second = (shift_x * sin(0-ref_yaw)+shift_y*cos(0-ref_yaw));
+                pstx[i] = (shift_x * cos(0-ref_yaw)-shift_y*sin(0-ref_yaw));
+                psty[i] = (shift_x * sin(0-ref_yaw)+shift_y*cos(0-ref_yaw));
+                if (i > 0 && i < pstx.size()) {
+                  if (pstx[i] <= pstx[i-1]) {
+//                    pstx[i] = (pstx[i-1] + pstx[i + 1]) / 2;
+                    //pstx[i] = ((shift_x + 0.001) * cos(0-ref_yaw)-(shift_y + 0.0001)*sin(0-ref_yaw));
+                  }
+                  if (psty[i] <= psty[i-1]) {
+//                    psty[i] = (psty[i-1] + psty[i + 1]) / 2;
+                    //psty[i] =  ((shift_x + 0.001) * sin(0-ref_yaw)+(shift_y + 0.0001)*cos(0-ref_yaw));
+                  }
+                }
+                if (true) {
+                  std::cout << i << " - " << shift_x << " - " << shift_y << std::endl;
+                  std::cout << i << " - " << pstx[i] << " - " << psty[i] << std::endl;
+                }
+                //std::cout << i << std::endl;
+                //std::cout << pstx[i] << std::endl;
+                //std::cout << psty[i] << std::endl;
+
+            //         std::cout << pstx[i] << std::endl;
+            // std::cout << psty[i] << std::endl;
+
             }
 
-            // Sort waypoints. This ensures that we wont have have any pstx[x] !< pstx[x-1] errors.
-            sort(pst.begin(), pst.end());
-
-            // Turn pairs into position vectors
-
-            vector<double> pstx;
-            vector<double> psty;
-
-            for (int i = 0; i <pst.size(); i++)
+            for (int i = 0; i <pstx.size(); i++)
             {
-
-              pstx.push_back(pst[i].first);
-              psty.push_back(pst[i].second);
+                if (i > 0 && i < pstx.size()) {
+                  if (pstx[i] <= pstx[i-1]) {
+                   // pstx[i] = (pstx[i-1] + pstx[i + 1]) / 2;
+  //                  pstx[i] = ((shift_x + 0.001) * cos(0-ref_yaw)-(shift_y + 0.0001)*sin(0-ref_yaw));
+                  }
+                  if (psty[i] <= psty[i-1]) {
+                 //   psty[i] = (psty[i-1] + psty[i + 1]) / 2;
+//                    psty[i] =  ((shift_x + 0.001) * sin(0-ref_yaw)+(shift_y + 0.0001)*cos(0-ref_yaw));
+                  }
+                }
+ 
             }
 
-            // Define spline
             tk::spline spline;
+
             spline.set_points(pstx, psty);
+
+            // Define the next steps
+            vector<coordinate> next_values;
 
             for(int i = 0; i < previous_path_x.size(); i++)
             {
@@ -454,13 +508,14 @@ int main() {
                 next_y_vals.push_back(previous_path_y[i]);
             }
 
+            //double ref_vel = current_target_velocity;
+
             double target_x = 30.0;
             double target_y = spline(target_x);
             double target_dist = sqrt((target_x)*(target_x) + (target_y)*(target_y));
 
             double x_addon = 0;
 
-            // Build paths based off spline
             for (int i = 1; i <= 50-previous_path_x.size(); i++) {
                 double N = (target_dist/(.02*current_target_velocity/2.24));
                 double x_point = x_addon+target_x/N;
@@ -481,15 +536,15 @@ int main() {
                 next_y_vals.push_back(y_point);
             }
 
-            json msgJson;
-
+            // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             msgJson["next_x"] = next_x_vals;
             msgJson["next_y"] = next_y_vals;
 
             auto msg = "42[\"control\","+ msgJson.dump()+"]";
 
             //this_thread::sleep_for(chrono::milliseconds(1000));
-            ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);    
+            ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          
         }
       } else {
         // Manual driving
