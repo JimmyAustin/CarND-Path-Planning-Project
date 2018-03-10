@@ -8,8 +8,6 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
-#include "path_generator.h"
-#include "world_map.h"
 #include "spline.h"
 
 
@@ -60,7 +58,6 @@ int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vect
          closestLen = dist;
          closestWaypoint = i;
      }
-
  }
 
  return closestWaypoint;

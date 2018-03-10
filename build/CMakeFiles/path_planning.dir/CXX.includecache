@@ -849,30 +849,8 @@ Eigen-3.3/Eigen/QR
 /mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/Eigen-3.3/Eigen/QR
 json.hpp
 /mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/json.hpp
-path_generator.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/path_generator.h
-world_map.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/world_map.h
 spline.h
 /mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/spline.h
-
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/path_generator.cpp
-path_generator.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/path_generator.h
-world_map.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/world_map.h
-spline.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/spline.h
-math.h
--
-iostream
--
-
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/path_generator.h
-vector
--
-world_map.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/world_map.h
 
 /mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/spline.h
 cstdio
@@ -882,47 +860,5 @@ cassert
 vector
 -
 algorithm
--
-
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/world_map.cpp
-algorithm
--
-iostream
--
-cmath
--
-map
--
-string
--
-iterator
--
-math.h
--
-world_map.h
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/world_map.h
-fstream
--
-chrono
--
-fstream
--
-math.h
--
-uWS/uWS.h
--
-chrono
--
-iostream
--
-thread
--
-vector
--
-sstream
--
-
-/mnt/c/Users/James Austin/code/CarND-Path-Planning-Project/src/world_map.h
-string
 -
 

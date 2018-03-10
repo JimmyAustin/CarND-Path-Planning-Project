@@ -150,60 +150,6 @@ src/main.cpp.s:
 	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
-src/path_generator.o: src/path_generator.cpp.o
-
-.PHONY : src/path_generator.o
-
-# target to build an object file
-src/path_generator.cpp.o:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/path_generator.cpp.o
-.PHONY : src/path_generator.cpp.o
-
-src/path_generator.i: src/path_generator.cpp.i
-
-.PHONY : src/path_generator.i
-
-# target to preprocess a source file
-src/path_generator.cpp.i:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/path_generator.cpp.i
-.PHONY : src/path_generator.cpp.i
-
-src/path_generator.s: src/path_generator.cpp.s
-
-.PHONY : src/path_generator.s
-
-# target to generate assembly for a file
-src/path_generator.cpp.s:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/path_generator.cpp.s
-.PHONY : src/path_generator.cpp.s
-
-src/world_map.o: src/world_map.cpp.o
-
-.PHONY : src/world_map.o
-
-# target to build an object file
-src/world_map.cpp.o:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/world_map.cpp.o
-.PHONY : src/world_map.cpp.o
-
-src/world_map.i: src/world_map.cpp.i
-
-.PHONY : src/world_map.i
-
-# target to preprocess a source file
-src/world_map.cpp.i:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/world_map.cpp.i
-.PHONY : src/world_map.cpp.i
-
-src/world_map.s: src/world_map.cpp.s
-
-.PHONY : src/world_map.s
-
-# target to generate assembly for a file
-src/world_map.cpp.s:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/world_map.cpp.s
-.PHONY : src/world_map.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -216,12 +162,6 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
-	@echo "... src/path_generator.o"
-	@echo "... src/path_generator.i"
-	@echo "... src/path_generator.s"
-	@echo "... src/world_map.o"
-	@echo "... src/world_map.i"
-	@echo "... src/world_map.s"
 .PHONY : help
 
 

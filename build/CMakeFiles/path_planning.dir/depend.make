@@ -161,15 +161,5 @@ CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/Eigen-3.3/Eigen/src/plugins/
 CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/Eigen-3.3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/json.hpp
 CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/main.cpp
-CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/path_generator.h
 CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/spline.h
-CMakeFiles/path_planning.dir/src/main.cpp.o: ../src/world_map.h
-
-CMakeFiles/path_planning.dir/src/path_generator.cpp.o: ../src/path_generator.cpp
-CMakeFiles/path_planning.dir/src/path_generator.cpp.o: ../src/path_generator.h
-CMakeFiles/path_planning.dir/src/path_generator.cpp.o: ../src/spline.h
-CMakeFiles/path_planning.dir/src/path_generator.cpp.o: ../src/world_map.h
-
-CMakeFiles/path_planning.dir/src/world_map.cpp.o: ../src/world_map.cpp
-CMakeFiles/path_planning.dir/src/world_map.cpp.o: ../src/world_map.h
 
